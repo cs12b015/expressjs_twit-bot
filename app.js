@@ -12,6 +12,8 @@ var users = require('./routes/users');
 var app = express();
 var session = require('express-session')
 //passport part
+var TasksQueue = require('tasks-queue'),
+q = new TasksQueue();
 var passport = require('passport'), TwitterStrategy = require('passport-twitter').Strategy;
 
 var Twit = require('twit');
@@ -61,9 +63,11 @@ stream.on('follow', function (eventMsg) {
 res.redirect('/');
 });
 
+
+q.setMinTime(45*1000);
+
 //for bulkposting tweets
 app.get('/bulktweet/:filename',function(req,res,next){
-  // var filename = "./usernames.csv";
   var filename = req.params.filename;
   var buf = fs.readFileSync(filename,'utf8');
   var arr = buf.split('\n');
@@ -71,35 +75,38 @@ app.get('/bulktweet/:filename',function(req,res,next){
   var tempstatus=status;
   for(var i=1;i<arr.length;i++)
   {
-    if(status.length+arr[i].length+2 > 140)
+    if(status.length+arr[i].length+2 > 140 )
     {
-      Bot.post('statuses/update',{status: status},function(err,data,response){
-      if(err){
-        console.log(err.message);
-      }
-      else{
-        console.log("Your Status Has Been Updated");
-      }
-      });
+      q.pushTask('tweet-task',{buf:status});
+      status=tempstatus;  
+    }else if(i === arr.length-1){
+      q.pushTask('tweet-task',{buf:status});
       status=tempstatus;
-    }else
+    }
+    else
     {
       status=status+' @'+arr[i];
     }
-  }
-res.redirect('/');
+  }  
+  q.execute();
+  res.redirect('/');
 });
 
+q.on('tweet-task',tweetProcess); 
 
-
-
-
-
-
-
-
-
-
+function tweetProcess(jinn,data)
+{
+  var status=data.buf;
+  Bot.post('statuses/update',{status: status},function(err,data,response){
+    if(err){
+      console.log(err.message);
+    }
+    else{
+      console.log("Your Status Has Been Updated");
+    }
+  });
+  jinn.done(); // important!
+}
 
 
 // view engine setup
