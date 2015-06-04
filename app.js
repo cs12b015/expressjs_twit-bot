@@ -1,3 +1,4 @@
+//modules needed
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -5,20 +6,26 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var fs =require('fs');
+var session = require('express-session')
+var TasksQueue = require('tasks-queue');
+var passport = require('passport');
+var TwitterStrategy = require('passport-twitter').Strategy;
+var Twit = require('twit');
+var busboy = require('connect-busboy');
 
+//files needed
 var routes = require('./routes/index');
 var users = require('./routes/users');
-
-var app = express();
-var session = require('express-session')
-//passport part
-var TasksQueue = require('tasks-queue'),
-q = new TasksQueue();
-var passport = require('passport'), TwitterStrategy = require('passport-twitter').Strategy;
-
-var Twit = require('twit');
 var Config = require('./config1');
 //var Feed = require('./feed');
+
+
+var app = express();
+var q = new TasksQueue();
+
+app.use(busboy()); 
+
+
 
 var Bot = new Twit({
   consumer_key: Config.consumer_key,
@@ -42,11 +49,14 @@ app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}));
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(bodyParser.json({uploadDir:'./uploads'}));
+
 app.get('/auth/twitter', passport.authenticate('twitter'));
 app.get('/auth/twitter/callback',passport.authenticate('twitter', { successRedirect: '/',failureRedirect: '/auth/twitter' }));
 
 //For messaging the followers
 app.get('/follow',function(req,res,next){
+console.log("Started the messaging proceess for the followers");
 stream.on('follow', function (eventMsg) {
    var username = eventMsg.source.screen_name;
    Bot.post('direct_messages/new',{ screen_name: username, text:"Thank I changed text is that working"},function (err, data, response){
@@ -63,36 +73,16 @@ stream.on('follow', function (eventMsg) {
 res.redirect('/');
 });
 
-
-q.setMinTime(45*1000);
-
-//for bulkposting tweets
-app.get('/bulktweet/:filename',function(req,res,next){
-  var filename = req.params.filename;
-  var buf = fs.readFileSync(filename,'utf8');
-  var arr = buf.split('\n');
-  var status="Just Checking out the Twit node Package";
-  var tempstatus=status;
-  for(var i=1;i<arr.length;i++)
-  {
-    if(status.length+arr[i].length+2 > 140 )
-    {
-      q.pushTask('tweet-task',{buf:status});
-      status=tempstatus;  
-    }else if(i === arr.length-1){
-      q.pushTask('tweet-task',{buf:status});
-      status=tempstatus;
-    }
-    else
-    {
-      status=status+' @'+arr[i];
-    }
-  }  
-  q.execute();
-  res.redirect('/');
-});
-
-q.on('tweet-task',tweetProcess); 
+app.post('/upload', function(req, res, next) {
+ req.pipe(req.busboy);
+   req.busboy.on('file', function(fieldname, file, filename) {
+    var fstream = fs.createWriteStream('./files/' + filename); 
+    file.pipe(fstream);
+    fstream.on('close', function () {
+        res.redirect('back');
+    });
+   });
+}); 
 
 function tweetProcess(jinn,data)
 {

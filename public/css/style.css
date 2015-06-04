@@ -1,0 +1,23 @@
+body {
+    background: -webkit-radial-gradient(#ffffff, #cdcdcd);
+    background: -moz-radial-gradient(#ffffff, #cdcdcd);
+    background: -o-radial-gradient(#ffffff, #cdcdcd);
+    background: radial-gradient(#ffffff, #cdcdcd);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    height: 100%;
+    width: 100%;
+    font-size: 2em;
+}
+div {
+    -webkit-border-radius: 12px;
+    -moz-border-radius: 7px;
+    border-radius: 7px;
+    padding: 5px 4px;
+}
+.row{
+    background-color: white;
+}
+button{
+    float: left;
+}

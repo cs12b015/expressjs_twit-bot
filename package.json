@@ -18,6 +18,7 @@
     "passport-twitter": "~1.0.3",
     "express-session": "~1.11.2",
     "twit": "~1.1.20",
-    "tasks-queue": "0.0.2"
+    "tasks-queue": "0.0.2",
+    "connect-busboy": "0.0.2"
   }
 }
