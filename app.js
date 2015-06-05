@@ -16,7 +16,7 @@ var busboy = require('connect-busboy');
 //files needed
 var routes = require('./routes/index');
 var users = require('./routes/users');
-var Config = require('./config1');
+
 //var Feed = require('./feed');
 
 
@@ -26,24 +26,23 @@ var q = new TasksQueue();
 app.use(busboy()); 
 
 
+var Bot;
+var stream;
 
-var Bot = new Twit({
-  consumer_key: Config.consumer_key,
-  consumer_secret: Config.consumer_secret,
-  access_token: Config.access_token,
-  access_token_secret: Config.access_token_secret
-});
-
-var stream = Bot.stream('user');
 passport.use(new TwitterStrategy({
     consumerKey: "xQak0kLKC8PairSNCtWhpxgRi",
     consumerSecret: "LAz67w3c7Zi9Yz9x6MJ7uCmNcurGctc5ofRcvwCry7QsY72ozx",
     callbackURL: "http://127.0.0.1:3000/auth/twitter/callback"
   },
   function(token, tokenSecret, profile, done) {
+		Bot = new Twit({
+		  consumer_key: "xQak0kLKC8PairSNCtWhpxgRi",
+		  consumer_secret:"LAz67w3c7Zi9Yz9x6MJ7uCmNcurGctc5ofRcvwCry7QsY72ozx",
+		  access_token: token,
+		  access_token_secret: tokenSecret
+		});
+		stream = Bot.stream('user');
 
-    console.log(token);
-    console.log(profile);
         process.nextTick(function () {
       return done(null, profile);
     });
@@ -93,24 +92,58 @@ app.post('/upload', function(req, res, next) {
     var fstream = fs.createWriteStream('./files/' + filename); 
     file.pipe(fstream);
     fstream.on('close', function () {
-        res.redirect('back');
+       res.redirect('/bulktweet/'+filename);
     });
    });
+
 }); 
+
+q.setMinTime(3*1000);
+
+//for bulkposting tweets
+app.get('/bulktweet/:filename',function(req,res,next){
+	var filename = req.params.filename;
+	var buf = fs.readFileSync('./files/'+filename,'utf8');
+ 	var arr = buf.split('\n');
+  	var status="Just Checking out the Twit node Package";
+ 	var tempstatus=status;
+	  	for(var i=1;i<arr.length;i++)
+		{
+    		if(status.length+arr[i].length+2 > 140 )
+    		{
+      			q.pushTask('tweet-task',{buf:status});
+      			status=tempstatus;  
+    		}else if(i === arr.length-1){
+      			q.pushTask('tweet-task',{buf:status});
+      			status=tempstatus;
+    		}
+    		else
+    		{
+    	  		status=status+' @'+arr[i];
+    		}
+  		}  
+  	q.execute();
+  	res.redirect('/');
+});
+
+
+q.on('tweet-task',tweetProcess); 
 
 function tweetProcess(jinn,data)
 {
   var status=data.buf;
-  Bot.post('statuses/update',{status: status},function(err,data,response){
-    if(err){
-      console.log(err.message);
-    }
-    else{
-      console.log("Your Status Has Been Updated");
-    }
-  });
+  console.log(status);
+  // Bot.post('statuses/update',{status: status},function(err,data,response){
+  //   if(err){
+  //     console.log(err.message);
+  //   }
+  //   else{
+  //     console.log("Your Status Has Been Updated");
+  //   }
+  // });
   jinn.done(); // important!
 }
+
 
 
 // view engine setup
