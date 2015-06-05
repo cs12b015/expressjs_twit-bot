@@ -37,11 +37,17 @@ var Bot = new Twit({
 var stream = Bot.stream('user');
 passport.use(new TwitterStrategy({
     consumerKey: "xQak0kLKC8PairSNCtWhpxgRi",
-    consumerSecret: "LAz67w3c7Zi9Yz9x6MJ7uCmNcurGctc5ofRcvwCry7QsY72ozx"
+    consumerSecret: "LAz67w3c7Zi9Yz9x6MJ7uCmNcurGctc5ofRcvwCry7QsY72ozx",
+    callbackURL: "http://127.0.0.1:3000/auth/twitter/callback"
   },
   function(token, tokenSecret, profile, done) {
+
     console.log(token);
     console.log(profile);
+        process.nextTick(function () {
+      return done(null, profile);
+    });
+
   }
 ));
 
@@ -49,10 +55,18 @@ app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}));
 app.use(passport.initialize());
 app.use(passport.session());
 
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
+});
+
 app.use(bodyParser.json({uploadDir:'./uploads'}));
 
-app.get('/auth/twitter', passport.authenticate('twitter'));
-app.get('/auth/twitter/callback',passport.authenticate('twitter', { successRedirect: '/',failureRedirect: '/auth/twitter' }));
+app.get('/auth/twitter', passport.authenticate('twitter'),function(res,req){});
+app.get('/auth/twitter/callback',passport.authenticate('twitter', { successRedirect: '/',failureRedirect: '/auth/twitter' }),function(res,req){});
 
 //For messaging the followers
 app.get('/follow',function(req,res,next){
