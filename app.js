@@ -67,8 +67,17 @@ app.use(bodyParser.json({uploadDir:'./uploads'}));
 app.get('/auth/twitter', passport.authenticate('twitter'),function(res,req){});
 app.get('/auth/twitter/callback',passport.authenticate('twitter', { successRedirect: '/',failureRedirect: '/auth/twitter' }),function(res,req){});
 
+function loggedIn(req, res, next) {
+    if (req.user) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+}
+
+
 //For messaging the followers
-app.get('/follow',function(req,res,next){
+app.get('/follow',loggedIn,function(req,res,next){
 console.log("Started the messaging proceess for the followers");
 stream.on('follow', function (eventMsg) {
    var username = eventMsg.source.screen_name;
@@ -86,7 +95,7 @@ stream.on('follow', function (eventMsg) {
 res.redirect('/');
 });
 
-app.post('/upload', function(req, res, next) {
+app.post('/upload',loggedIn, function(req, res, next) {
  req.pipe(req.busboy);
    req.busboy.on('file', function(fieldname, file, filename) {
     var fstream = fs.createWriteStream('./files/' + filename); 
@@ -98,10 +107,10 @@ app.post('/upload', function(req, res, next) {
 
 }); 
 
-q.setMinTime(3*1000);
+q.setMinTime(9*1000);
 
 //for bulkposting tweets
-app.get('/bulktweet/:filename',function(req,res,next){
+app.get('/bulktweet/:filename',loggedIn,function(req,res,next){
 	var filename = req.params.filename;
 	var buf = fs.readFileSync('./files/'+filename,'utf8');
  	var arr = buf.split('\n');
@@ -133,18 +142,16 @@ function tweetProcess(jinn,data)
 {
   var status=data.buf;
   console.log(status);
-  // Bot.post('statuses/update',{status: status},function(err,data,response){
-  //   if(err){
-  //     console.log(err.message);
-  //   }
-  //   else{
-  //     console.log("Your Status Has Been Updated");
-  //   }
-  // });
+  Bot.post('statuses/update',{status: status},function(err,data,response){
+    if(err){
+      console.log(err.message);
+    }
+    else{
+      console.log("Your Status Has Been Updated");
+    }
+  });
   jinn.done(); // important!
 }
-
-
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
