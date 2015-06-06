@@ -10,6 +10,9 @@
     <script src="homepage/js/angular-file-upload.js"></script>
     <script src="homepage/twitapp.js"></script>
     <style>
+    .responsive-input{
+        width: 100%;
+    }
     .my-drop-zone {
         border: dotted 3px lightgray;
     }
@@ -150,14 +153,16 @@
     <section class="box">
     <div class="container">
     <div class="row">
+    <form id="singletweetid" action="/userSingletweet" method="post">
         <h3 class="text-center" >Tweet here</h3>
         <div  class="center-block" style="margin-left:30vw;margin-right:25vw">
-        <textarea id="status" rows="5" style="width:485px"></textarea>
-        <div class="row">
-            <span id="text_counter"></span><input class="btn btn-large btn-primary btn-block" type="submit" id="posting" value="Post" />
-        </div>
+            <textarea id="statusacb" name="statusacb" class="responsive-input" rows="5" ></textarea>
+            <div class="row">
+                <span id="text_counter"></span><input class="btn btn-large btn-primary btn-block" type="submit" id="posting" value="Post" />
+            </div>
         
         </div>
+    </form>>
         
     </div>
     </div>

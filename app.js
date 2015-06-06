@@ -107,7 +107,28 @@ app.post('/upload',loggedIn, function(req, res, next) {
 
 }); 
 
-q.setMinTime(9*1000);
+app.get('/singletweet/:text',loggedIn,function(req,res,next){
+    var text = req.params.text;
+    Bot.post('statuses/update',{status: text},function(err,data,response){
+    if(err){
+      console.log(err.message);
+    }
+    else{
+      console.log("Your Status Has Been Updated");
+    }
+  });
+    res.redirect('/');
+});
+
+app.post('/userSingletweet', function(req, res){    
+    var statusacb = req.body.statusacb;
+    console.log(statusacb);
+});
+
+
+
+
+q.setMinTime(45*1000);
 
 //for bulkposting tweets
 app.get('/bulktweet/:filename',loggedIn,function(req,res,next){

@@ -8,12 +8,22 @@ function loggedIn(req, res, next) {
         res.redirect('/login');
     }
 }
+
+function checkloggedIn(req, res, next) {
+    if (req.user) {
+      res.redirect('/');
+       
+    } else {
+       next();
+    }
+}
+
 /* GET home page. */
 router.get('/',loggedIn, function(req, res, next) {
   res.render('index', { title: 'Twitter-Bot' });
 });
 
-router.get('/login', function(req, res, next) {
+router.get('/login',checkloggedIn, function(req, res, next) {
   res.render('login', { title: 'Twitter-Bot' });
 });
 
